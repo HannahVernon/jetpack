@@ -1,0 +1,4 @@
+Significance: patch
+Type: fixed
+
+Podcast: only promote existing pending directory states to active; do not create state entries from crawler user agents alone.
