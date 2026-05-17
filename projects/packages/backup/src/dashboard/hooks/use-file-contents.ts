@@ -10,15 +10,22 @@ type Result = {
 
 /**
  * Base64-encode a manifest path the way WPCOM's file-content endpoint
- * expects. Uses `window.btoa` in the browser and falls back to Node's
- * `Buffer` for tests/SSR.
+ * expects. UTF-8 safe: plain `window.btoa` rejects code points > 0xFF
+ * (any non-ASCII filename — uploads with accented or CJK characters,
+ * for instance), so the browser path encodes to bytes first via
+ * `TextEncoder`. The Node `Buffer` fallback handles UTF-8 natively.
  *
  * @param manifestPath - The raw manifest path.
  * @return Base64-encoded path.
  */
 function encodeManifestPath( manifestPath: string ): string {
 	if ( typeof window !== 'undefined' && typeof window.btoa === 'function' ) {
-		return window.btoa( manifestPath );
+		const bytes = new TextEncoder().encode( manifestPath );
+		let binary = '';
+		for ( const byte of bytes ) {
+			binary += String.fromCharCode( byte );
+		}
+		return window.btoa( binary );
 	}
 	return Buffer.from( manifestPath, 'utf-8' ).toString( 'base64' );
 }
