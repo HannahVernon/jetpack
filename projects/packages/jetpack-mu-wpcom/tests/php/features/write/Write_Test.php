@@ -769,6 +769,66 @@ class Write_Test extends \WorDBless\BaseTestCase {
 	}
 
 	/**
+	 * Test that an image with sizeSlug returns false (preserved by convertToBlocks).
+	 */
+	public function test_detect_unsupported_image_with_size_slug() {
+		foreach ( array( 'thumbnail', 'medium', 'large', 'full' ) as $size ) {
+			$content = '<!-- wp:image {"sizeSlug":"' . $size . '"} --><figure class="wp-block-image size-' . $size . '"><img src="test.jpg" alt=""/></figure><!-- /wp:image -->';
+			$this->assertFalse(
+				wpcom_write_detect_unsupported_content( $content ),
+				"sizeSlug={$size} should be supported"
+			);
+		}
+	}
+
+	/**
+	 * Test that an image with align (left/center/right) returns false.
+	 */
+	public function test_detect_unsupported_image_with_align() {
+		foreach ( array( 'left', 'center', 'right' ) as $align ) {
+			$content = '<!-- wp:image {"align":"' . $align . '"} --><figure class="wp-block-image align' . $align . '"><img src="test.jpg" alt=""/></figure><!-- /wp:image -->';
+			$this->assertFalse(
+				wpcom_write_detect_unsupported_content( $content ),
+				"align={$align} should be supported"
+			);
+		}
+	}
+
+	/**
+	 * Test that an image with both align and sizeSlug returns false.
+	 */
+	public function test_detect_unsupported_image_with_align_and_size_slug() {
+		$content = '<!-- wp:image {"align":"center","sizeSlug":"medium","id":42} --><figure class="wp-block-image aligncenter size-medium"><img src="test.jpg" alt=""/></figure><!-- /wp:image -->';
+		$this->assertFalse( wpcom_write_detect_unsupported_content( $content ) );
+	}
+
+	/**
+	 * Test that an image with alignwide returns 'block-editor' (out of scope).
+	 */
+	public function test_detect_unsupported_image_with_align_wide() {
+		$content = '<!-- wp:image {"align":"wide"} --><figure class="wp-block-image alignwide"><img src="test.jpg" alt=""/></figure><!-- /wp:image -->';
+		$this->assertSame( 'block-editor', wpcom_write_detect_unsupported_content( $content ) );
+	}
+
+	/**
+	 * Test that an image with alignfull returns 'block-editor' (out of scope).
+	 */
+	public function test_detect_unsupported_image_with_align_full() {
+		$content = '<!-- wp:image {"align":"full"} --><figure class="wp-block-image alignfull"><img src="test.jpg" alt=""/></figure><!-- /wp:image -->';
+		$this->assertSame( 'block-editor', wpcom_write_detect_unsupported_content( $content ) );
+	}
+
+	/**
+	 * Test that an image with a custom width attribute returns 'block-editor'.
+	 * Drag-to-resize is explicitly out of scope for Write — custom widths
+	 * should bounce to the block editor.
+	 */
+	public function test_detect_unsupported_image_with_custom_width() {
+		$content = '<!-- wp:image {"width":"312px"} --><figure class="wp-block-image"><img src="test.jpg" alt="" style="width:312px"/></figure><!-- /wp:image -->';
+		$this->assertSame( 'block-editor', wpcom_write_detect_unsupported_content( $content ) );
+	}
+
+	/**
 	 * Test that a supported quote block returns false.
 	 */
 	public function test_detect_unsupported_quote_block() {
@@ -1072,7 +1132,7 @@ class Write_Test extends \WorDBless\BaseTestCase {
 		// Read enough of the function body to capture all block types.
 		// If convertToBlocks() grows past this, the assertion below will
 		// catch missing types. Increase as needed.
-		$fn_body = substr( $view_js, $fn_start, 6000 );
+		$fn_body = substr( $view_js, $fn_start, 8000 );
 
 		// Match opening block comments only (negative lookbehind skips closing <!-- /wp:... -->).
 		preg_match_all( '/<!-- (?!\/)wp:([a-z][a-z0-9-]*)/', $fn_body, $matches );
@@ -1101,7 +1161,7 @@ class Write_Test extends \WorDBless\BaseTestCase {
 		$js_attrs = array(
 			'embed'     => array( 'providerNameSlug', 'responsive', 'type', 'url' ),
 			'heading'   => array( 'align', 'level' ),
-			'image'     => array(),
+			'image'     => array( 'align', 'sizeSlug' ),
 			'list'      => array( 'ordered' ),
 			'list-item' => array(),
 			'paragraph' => array( 'align' ),
@@ -1114,7 +1174,7 @@ class Write_Test extends \WorDBless\BaseTestCase {
 		// but safely ignores them.  Any PHP attr not in $js_attrs and not
 		// listed here is an error — it would let unsupported content through.
 		$php_extras = array(
-			'image' => array( 'alt', 'id', 'sizeSlug' ),
+			'image' => array( 'alt', 'id' ),
 		);
 
 		foreach ( $js_attrs as $block => $expected ) {
