@@ -449,6 +449,11 @@ function syncFigureStateFromDom( fig ) {
 	state.formatAlignCenter = align === 'center';
 	state.formatAlignRight = align === 'right';
 	state.formatAlignJustify = false;
+	// Justify has no meaning for an image figure — disable it so the
+	// button state is consistent whether the figure was clicked or reached
+	// via keyboard.  When the selection later moves back into text,
+	// updateFormattingState recomputes this from cursor context.
+	state.cannotJustify = true;
 }
 
 /**
@@ -1766,10 +1771,9 @@ function insertNewList( listTag ) {
 function updateFormattingState() {
 	// If a figure is selected the toolbar should reflect its alignment/size
 	// instead of the text cursor's. syncFigureStateFromDom keeps state in
-	// sync as alignment/size changes happen.
+	// sync (including disabling Justify) as alignment/size changes happen.
 	if ( state.figureSelected && selectedFigure ) {
 		syncFigureStateFromDom( selectedFigure );
-		state.cannotJustify = true;
 		return;
 	}
 
