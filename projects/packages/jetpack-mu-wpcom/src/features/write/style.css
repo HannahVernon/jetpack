@@ -1082,6 +1082,10 @@
 	text-wrap: stable;
 }
 
+.bw-content mark.has-inline-color {
+	background-color: transparent;
+}
+
 .bw-content.bw-is-empty {
 	position: relative;
 }
